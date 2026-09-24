@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
 import {
@@ -16,6 +16,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
 
+
 const EMPTY_COURSE = {
   title: "",
   category: "",
@@ -27,6 +28,7 @@ const EMPTY_COURSE = {
 };
 
 
+
 const LEVEL_OPTIONS = [
   "Beginner",
   "Intermediate",
@@ -34,12 +36,42 @@ const LEVEL_OPTIONS = [
 ];
 
 
-// Load course list
+
+
 async function fetchAllCourses() {
   const response = await api.get("/courses");
 
   return response.data.courses || [];
 }
+
+
+
+
+function getDurationValue(duration) {
+  if (!duration) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const match = String(duration)
+    .trim()
+    .match(/^(\d+)\s+(Days|Weeks|Months)$/i);
+
+  if (!match) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const amount = Number(match[1]);
+  const unit = match[2].toLowerCase();
+
+  const unitInDays = {
+    days: 1,
+    weeks: 7,
+    months: 30,
+  };
+
+  return amount * unitInDays[unit];
+}
+
 
 
 function ManageCourses() {
@@ -55,19 +87,31 @@ function ManageCourses() {
 
   const [formData, setFormData] = useState(EMPTY_COURSE);
 
-  // Server-side field errors
+
   const [fieldErrors, setFieldErrors] = useState({});
 
-  // General form error
+ 
   const [formError, setFormError] = useState("");
 
-  // Prevent duplicate submissions
+ 
   const [saving, setSaving] = useState(false);
 
 
-  // ======================================================
-  // Load courses
-  // ======================================================
+
+
+
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const [categoryFilter, setCategoryFilter] = useState("All");
+
+  const [levelFilter, setLevelFilter] = useState("All");
+
+  const [sortField, setSortField] = useState("");
+
+  const [sortDirection, setSortDirection] = useState("asc");
+
+
+
 
   useEffect(() => {
 
@@ -96,18 +140,233 @@ function ManageCourses() {
   }, []);
 
 
-  // ======================================================
-  // Refresh courses
-  // ======================================================
+
+  
 
   const refreshCourses = async () => {
     setCourses(await fetchAllCourses());
   };
 
 
+
+
+
+  const categoryOptions = useMemo(() => {
+
+    const categories = courses
+      .map((course) => String(course.category || "").trim())
+      .filter(Boolean);
+
+    return [...new Set(categories)].sort((a, b) =>
+      a.localeCompare(b, undefined, {
+        sensitivity: "base",
+      })
+    );
+
+  }, [courses]);
+
+
+
+
+
+  const displayedCourses = useMemo(() => {
+
+    const search = searchTerm.trim().toLowerCase();
+
+
+    const filtered = courses.filter((course) => {
+
+      const title = String(course.title || "").toLowerCase();
+
+      const category = String(
+        course.category || ""
+      ).toLowerCase();
+
+      const courseId = String(
+        course.id || ""
+      ).toLowerCase();
+
+      const level = String(
+        course.level || ""
+      );
+
+      const matchesSearch =
+        !search ||
+        title.includes(search) ||
+        category.includes(search) ||
+        courseId.includes(search);
+
+      const matchesCategory =
+        categoryFilter === "All" ||
+        String(course.category || "").trim() ===
+          categoryFilter;
+
+      const matchesLevel =
+        levelFilter === "All" ||
+        level === levelFilter;
+
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesLevel
+      );
+    });
+
+
+
+   
+
+    if (!sortField) {
+      return filtered;
+    }
+
+
+
+    const sorted = [...filtered];
+
+
+
+    sorted.sort((a, b) => {
+
+      let comparison = 0;
+
+
+
+
+      if (sortField === "id") {
+
+        comparison =
+          Number(a.id || 0) -
+          Number(b.id || 0);
+
+      }
+
+
+
+      // Numeric price
+      else if (sortField === "price") {
+
+        comparison =
+          Number(a.price || 0) -
+          Number(b.price || 0);
+
+      }
+
+
+
+     
+      else if (sortField === "duration") {
+
+        comparison =
+          getDurationValue(a.duration) -
+          getDurationValue(b.duration);
+
+      }
+
+
+
+      else {
+
+        const valueA = String(
+          a[sortField] ?? ""
+        ).trim();
+
+        const valueB = String(
+          b[sortField] ?? ""
+        ).trim();
+
+        comparison = valueA.localeCompare(
+          valueB,
+          undefined,
+          {
+            sensitivity: "base",
+            numeric: true,
+          }
+        );
+      }
+
+
+
+      if (comparison === 0) {
+
+        comparison =
+          Number(a.id || 0) -
+          Number(b.id || 0);
+      }
+
+
+
+      return sortDirection === "asc"
+        ? comparison
+        : -comparison;
+    });
+
+
+
+    return sorted;
+
+  }, [
+    courses,
+    searchTerm,
+    categoryFilter,
+    levelFilter,
+    sortField,
+    sortDirection,
+  ]);
+
+
+
+
+  const handleSort = (field) => {
+
+    if (sortField === field) {
+
+      setSortDirection((previous) =>
+        previous === "asc"
+          ? "desc"
+          : "asc"
+      );
+
+    } else {
+
+      setSortField(field);
+
+      setSortDirection("asc");
+    }
+  };
+
+
+
+  // Sorting indicator
+  const getSortIndicator = (field) => {
+
+    if (sortField !== field) {
+      return "";
+    }
+
+    return sortDirection === "asc"
+      ? " ↑"
+      : " ↓";
+  };
+
+
+
   // ======================================================
-  // Form helpers
+  // CR-003: Reset filters
   // ======================================================
+
+  const resetFilters = () => {
+
+    setSearchTerm("");
+    setCategoryFilter("All");
+    setLevelFilter("All");
+    setSortField("");
+    setSortDirection("asc");
+  };
+
+
+
+  
 
   const handleChange = (event) => {
 
@@ -118,7 +377,7 @@ function ManageCourses() {
       [name]: value,
     }));
 
-    // Remove the field error as the user edits the field
+    
     setFieldErrors((previous) => ({
       ...previous,
       [name]: "",
@@ -126,6 +385,7 @@ function ManageCourses() {
 
     setFormError("");
   };
+
 
 
   const openAddForm = () => {
@@ -142,6 +402,7 @@ function ManageCourses() {
     setError("");
     setSuccess("");
   };
+
 
 
   const openEditForm = (course) => {
@@ -166,6 +427,7 @@ function ManageCourses() {
   };
 
 
+
   const closeForm = () => {
 
     setShowForm(false);
@@ -180,15 +442,12 @@ function ManageCourses() {
   };
 
 
-  // ======================================================
-  // Create / Update
-  // ======================================================
 
   const handleSubmit = async (event) => {
 
     event.preventDefault();
 
-    // Prevent duplicate submissions
+    
     if (saving) {
       return;
     }
@@ -198,13 +457,9 @@ function ManageCourses() {
     setError("");
     setSuccess("");
 
-    /*
-      The backend is authoritative.
 
-      We only do a small amount of client-side checking here
-      for immediate feedback. The server performs ALL required
-      validation before saving.
-    */
+
+ 
 
     if (!formData.title.trim()) {
 
@@ -214,6 +469,7 @@ function ManageCourses() {
 
       return;
     }
+
 
 
     if (!formData.category.trim()) {
@@ -226,6 +482,7 @@ function ManageCourses() {
     }
 
 
+
     if (!formData.duration.trim()) {
 
       setFieldErrors({
@@ -234,6 +491,7 @@ function ManageCourses() {
 
       return;
     }
+
 
 
     if (formData.price === "") {
@@ -246,7 +504,8 @@ function ManageCourses() {
     }
 
 
-    // Prepare data for backend
+
+    
     const coursePayload = {
       title: formData.title.trim(),
       category: formData.category.trim(),
@@ -258,14 +517,14 @@ function ManageCourses() {
     };
 
 
+
     setSaving(true);
+
 
 
     try {
 
-      // ==================================================
-      // UPDATE
-      // ==================================================
+      
 
       if (editingId) {
 
@@ -278,9 +537,7 @@ function ManageCourses() {
 
       }
 
-      // ==================================================
-      // CREATE
-      // ==================================================
+      
 
       else {
 
@@ -293,28 +550,18 @@ function ManageCourses() {
       }
 
 
-      // Close form only after successful save
+
       closeForm();
 
-      // Reload courses
       await refreshCourses();
 
     } catch (error) {
 
       const responseData = error.response?.data;
 
-      /*
-        Server validation response:
 
-        {
-          message: "Validation failed",
-          errors: {
-            title: "...",
-            price: "..."
-          }
-        }
-      */
 
+     
       if (
         error.response?.status === 400 &&
         responseData?.errors
@@ -323,7 +570,6 @@ function ManageCourses() {
         setFieldErrors(responseData.errors);
 
         setFormError(
-          responseData.message ||
           "Please correct the highlighted fields."
         );
 
@@ -343,9 +589,7 @@ function ManageCourses() {
   };
 
 
-  // ======================================================
-  // Delete
-  // ======================================================
+
 
   const handleDelete = async (course) => {
 
@@ -360,6 +604,8 @@ function ManageCourses() {
     setError("");
     setSuccess("");
 
+
+
     try {
 
       const response = await api.delete(
@@ -368,6 +614,7 @@ function ManageCourses() {
 
       setSuccess(response.data.message);
 
+   
       await refreshCourses();
 
     } catch (error) {
@@ -381,17 +628,15 @@ function ManageCourses() {
   };
 
 
-  // ======================================================
-  // Render
-  // ======================================================
+
 
   return (
     <>
       <Navbar />
 
-      <div className="container">
 
-        {/* ---------- Header ---------- */}
+
+      <div className="container">
 
         <div className="page-header">
 
@@ -407,6 +652,7 @@ function ManageCourses() {
           </div>
 
 
+
           <button
             type="button"
             className="btn btn-primary"
@@ -417,17 +663,23 @@ function ManageCourses() {
             }
             disabled={saving}
           >
-            {showForm ? <FaTimes /> : <FaPlus />}
+
+            {showForm ? (
+              <FaTimes />
+            ) : (
+              <FaPlus />
+            )}
 
             {showForm
               ? "Cancel"
               : "Add Course"}
+
           </button>
 
         </div>
 
 
-        {/* ---------- Success / general errors ---------- */}
+
 
         {success && (
           <p className="success">
@@ -442,9 +694,8 @@ function ManageCourses() {
         )}
 
 
-        {/* ==================================================
-            ADD / EDIT FORM
-        ================================================== */}
+
+
 
         {showForm && (
 
@@ -461,13 +712,14 @@ function ManageCourses() {
             </div>
 
 
+
             <form
               className="form"
               onSubmit={handleSubmit}
               noValidate
             >
 
-              {/* ---------- Title + Category ---------- */}
+           
 
               <div className="form-row">
 
@@ -499,6 +751,7 @@ function ManageCourses() {
                   )}
 
                 </div>
+
 
 
                 <div className="form-group">
@@ -533,7 +786,8 @@ function ManageCourses() {
               </div>
 
 
-              {/* ---------- Level + Duration + Price ---------- */}
+
+           
 
               <div className="form-row">
 
@@ -578,6 +832,7 @@ function ManageCourses() {
                 </div>
 
 
+
                 <div className="form-group">
 
                   <label htmlFor="duration">
@@ -606,6 +861,7 @@ function ManageCourses() {
                   )}
 
                 </div>
+
 
 
                 <div className="form-group">
@@ -642,7 +898,8 @@ function ManageCourses() {
               </div>
 
 
-              {/* ---------- Image ---------- */}
+
+             
 
               <div className="form-group">
 
@@ -674,7 +931,7 @@ function ManageCourses() {
               </div>
 
 
-              {/* ---------- Description ---------- */}
+
 
               <div className="form-group">
 
@@ -706,7 +963,7 @@ function ManageCourses() {
               </div>
 
 
-              {/* ---------- General form error ---------- */}
+
 
               {formError && (
                 <p className="error">
@@ -715,7 +972,6 @@ function ManageCourses() {
               )}
 
 
-              {/* ---------- Actions ---------- */}
 
               <div className="form-actions">
 
@@ -734,6 +990,7 @@ function ManageCourses() {
                       : "Create Course"}
 
                 </button>
+
 
 
                 <button
@@ -757,19 +1014,14 @@ function ManageCourses() {
         )}
 
 
-        {/* ==================================================
-            COURSE TABLE
-        ================================================== */}
+
 
         <section className="section-card">
 
           <div className="section-card-header">
 
             <h2>
-              All Courses
-              {courses.length > 0
-                ? ` (${courses.length})`
-                : ""}
+              Course List
             </h2>
 
             <Link
@@ -783,6 +1035,152 @@ function ManageCourses() {
           </div>
 
 
+
+         
+
+          <div className="course-controls">
+
+            <div className="form-group">
+
+              <label htmlFor="course-search">
+                Search Courses
+              </label>
+
+              <input
+                id="course-search"
+                type="text"
+                className="input"
+                value={searchTerm}
+                onChange={(event) =>
+                  setSearchTerm(event.target.value)
+                }
+                placeholder="Search by title, category or course ID..."
+              />
+
+            </div>
+
+
+
+          
+
+            <div className="form-group">
+
+              <label htmlFor="category-filter">
+                Category
+              </label>
+
+              <select
+                id="category-filter"
+                className="input"
+                value={categoryFilter}
+                onChange={(event) =>
+                  setCategoryFilter(event.target.value)
+                }
+              >
+
+                <option value="All">
+                  All
+                </option>
+
+                {categoryOptions.map(
+                  (category) => (
+                    <option
+                      key={category}
+                      value={category}
+                    >
+                      {category}
+                    </option>
+                  )
+                )}
+
+              </select>
+
+            </div>
+
+
+
+         
+
+            <div className="form-group">
+
+              <label htmlFor="level-filter">
+                Level
+              </label>
+
+              <select
+                id="level-filter"
+                className="input"
+                value={levelFilter}
+                onChange={(event) =>
+                  setLevelFilter(event.target.value)
+                }
+              >
+
+                <option value="All">
+                  All
+                </option>
+
+                {LEVEL_OPTIONS.map(
+                  (level) => (
+                    <option
+                      key={level}
+                      value={level}
+                    >
+                      {level}
+                    </option>
+                  )
+                )}
+
+              </select>
+
+            </div>
+
+
+
+            {/* Reset */}
+
+            <div className="form-group filter-reset-group">
+
+              <label>
+                &nbsp;
+              </label>
+
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={resetFilters}
+              >
+                Reset Filters
+              </button>
+
+            </div>
+
+          </div>
+
+
+
+          
+
+          {!loading && (
+
+            <div className="result-counter">
+
+              Showing{" "}
+              <strong>
+                {displayedCourses.length}
+              </strong>{" "}
+              of{" "}
+              <strong>
+                {courses.length}
+              </strong>{" "}
+              courses
+
+            </div>
+
+          )}
+
+
+
           {loading && (
             <p className="loading">
               Loading courses...
@@ -790,17 +1188,51 @@ function ManageCourses() {
           )}
 
 
+
+      
+
           {!loading &&
             courses.length === 0 && (
+
               <p className="empty">
                 No courses yet. Click "Add Course"
                 to create the first one.
               </p>
+
             )}
 
 
+
+          
+
           {!loading &&
-            courses.length > 0 && (
+            courses.length > 0 &&
+            displayedCourses.length === 0 && (
+
+              <div className="no-results">
+
+                <p>
+                  No courses found.
+                </p>
+
+                <button
+                  type="button"
+                  className="btn btn-outline"
+                  onClick={resetFilters}
+                >
+                  Reset Filters
+                </button>
+
+              </div>
+
+            )}
+
+
+
+          {/* Course table */}
+
+          {!loading &&
+            displayedCourses.length > 0 && (
 
               <div className="table-wrapper">
 
@@ -809,105 +1241,204 @@ function ManageCourses() {
                   <thead>
 
                     <tr>
-                      <th>ID</th>
-                      <th>Image</th>
-                      <th>Title</th>
-                      <th>Category</th>
-                      <th>Level</th>
-                      <th>Duration</th>
-                      <th>Price</th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="sort-button"
+                          onClick={() =>
+                            handleSort("id")
+                          }
+                        >
+                          ID
+                          {getSortIndicator("id")}
+                        </button>
+                      </th>
+
+                      <th>
+                        Image
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="sort-button"
+                          onClick={() =>
+                            handleSort("title")
+                          }
+                        >
+                          Title
+                          {getSortIndicator("title")}
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="sort-button"
+                          onClick={() =>
+                            handleSort("category")
+                          }
+                        >
+                          Category
+                          {getSortIndicator("category")}
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="sort-button"
+                          onClick={() =>
+                            handleSort("level")
+                          }
+                        >
+                          Level
+                          {getSortIndicator("level")}
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="sort-button"
+                          onClick={() =>
+                            handleSort("duration")
+                          }
+                        >
+                          Duration
+                          {getSortIndicator("duration")}
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="sort-button"
+                          onClick={() =>
+                            handleSort("price")
+                          }
+                        >
+                          Price
+                          {getSortIndicator("price")}
+                        </button>
+                      </th>
+
                       <th className="table-actions-column">
                         Actions
                       </th>
+
                     </tr>
 
                   </thead>
 
 
+
                   <tbody>
 
-                    {courses.map((course) => (
+                    {displayedCourses.map(
+                      (course) => (
 
-                      <tr key={course.id}>
+                        <tr key={course.id}>
 
-                        <td>
-                          {course.id}
-                        </td>
-
-                        <td>
-
-                          {course.image ? (
-                            <img
-                              src={course.image}
-                              alt={course.title}
-                              className="table-thumb"
-                            />
-                          ) : (
-                            "-"
-                          )}
-
-                        </td>
-
-                        <td>
-                          {course.title}
-                        </td>
-
-                        <td>
-                          {course.category}
-                        </td>
-
-                        <td>
-
-                          <span className="tag tag-level">
-                            {course.level}
-                          </span>
-
-                        </td>
-
-                        <td>
-                          {course.duration}
-                        </td>
-
-                        <td>
-                          Rs. {course.price}
-                        </td>
-
-                        <td>
-
-                          <div className="table-actions">
-
-                            <button
-                              type="button"
-                              className="btn btn-small btn-outline"
-                              onClick={() =>
-                                openEditForm(course)
-                              }
-                              disabled={saving}
-                            >
-                              <FaEdit />
-                              Edit
-                            </button>
+                          <td>
+                            {course.id}
+                          </td>
 
 
-                            <button
-                              type="button"
-                              className="btn btn-small btn-danger"
-                              onClick={() =>
-                                handleDelete(course)
-                              }
-                              disabled={saving}
-                            >
-                              <FaTrash />
-                              Delete
-                            </button>
 
-                          </div>
+                          <td>
 
-                        </td>
+                            {course.image ? (
 
-                      </tr>
+                              <img
+                                src={course.image}
+                                alt={course.title}
+                                className="table-thumb"
+                              />
 
-                    ))}
+                            ) : (
+
+                              "-"
+
+                            )}
+
+                          </td>
+
+
+
+                          <td>
+                            {course.title}
+                          </td>
+
+
+
+                          <td>
+                            {course.category}
+                          </td>
+
+
+
+                          <td>
+
+                            <span className="tag tag-level">
+                              {course.level}
+                            </span>
+
+                          </td>
+
+
+
+                          <td>
+                            {course.duration}
+                          </td>
+
+
+
+                          <td>
+                            Rs. {course.price}
+                          </td>
+
+
+
+                          <td>
+
+                            <div className="table-actions">
+
+                              <button
+                                type="button"
+                                className="btn btn-small btn-outline"
+                                onClick={() =>
+                                  openEditForm(course)
+                                }
+                                disabled={saving}
+                              >
+                                <FaEdit />
+                                Edit
+                              </button>
+
+
+
+                              <button
+                                type="button"
+                                className="btn btn-small btn-danger"
+                                onClick={() =>
+                                  handleDelete(course)
+                                }
+                                disabled={saving}
+                              >
+                                <FaTrash />
+                                Delete
+                              </button>
+
+                            </div>
+
+                          </td>
+
+                        </tr>
+
+                      )
+                    )}
 
                   </tbody>
 
@@ -921,10 +1452,14 @@ function ManageCourses() {
 
       </div>
 
+
+
       <Footer />
     </>
   );
 }
+
+
 
 export default ManageCourses;
 
