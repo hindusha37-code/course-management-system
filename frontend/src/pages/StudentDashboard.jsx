@@ -1,6 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaBook, FaEye, FaGraduationCap, FaSearch } from "react-icons/fa";
+import {
+  FaBook,
+  FaEye,
+  FaGraduationCap,
+  FaSearch
+} from "react-icons/fa";
 
 import api from "../services/api";
 import { getUser } from "../services/auth";
@@ -34,7 +39,7 @@ function StudentDashboard() {
           api.get("/courses/stats"),
         ]);
 
-        setEnrollments(enrollmentsResponse.data.enrollments);
+        setEnrollments(enrollmentsResponse.data.enrollments || []);
 
         setStats({
           courseCount: statsResponse.data.courseCount,
@@ -60,14 +65,45 @@ function StudentDashboard() {
   }, []);
 
 
+  // ---------- Safely convert course price to a number ----------
+  const getSafePrice = (price) => {
+
+    const numericPrice = Number(price);
+
+    return Number.isFinite(numericPrice) ? numericPrice : 0;
+
+  };
+
+
+  // ---------- Calculate total enrolled-course value ----------
+  const totalEnrollmentValue = useMemo(() => {
+
+    return enrollments.reduce(
+      (sum, enrollment) => {
+        return sum + getSafePrice(enrollment.price);
+      },
+      0
+    );
+
+  }, [enrollments]);
+
+
   // Only show the 3 most recent enrollments on the dashboard
   const recentEnrollments = enrollments.slice(0, 3);
 
 
   const formatDate = (value) => {
+
     if (!value) return "-";
 
-    return new Date(value).toLocaleDateString();
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return "-";
+    }
+
+    return date.toLocaleDateString();
+
   };
 
 
@@ -108,30 +144,56 @@ function StudentDashboard() {
         <div className="dashboard-grid">
 
           <div className="dashboard-card">
+
             <span className="dashboard-card-value">
               {loading ? "..." : enrollments.length}
             </span>
+
             <span className="dashboard-card-label">
               My Enrolled Courses
             </span>
+
           </div>
 
+
           <div className="dashboard-card">
+
+            <span className="dashboard-card-value">
+              {loading
+                ? "..."
+                : `Rs. ${totalEnrollmentValue.toFixed(2)}`}
+            </span>
+
+            <span className="dashboard-card-label">
+              Total Enrolled Course Value
+            </span>
+
+          </div>
+
+
+          <div className="dashboard-card">
+
             <span className="dashboard-card-value">
               {loading ? "..." : stats.courseCount}
             </span>
+
             <span className="dashboard-card-label">
               Courses Available
             </span>
+
           </div>
 
+
           <div className="dashboard-card">
+
             <span className="dashboard-card-value">
               {loading ? "..." : stats.studentCount}
             </span>
+
             <span className="dashboard-card-label">
               Registered Students
             </span>
+
           </div>
 
         </div>
@@ -142,53 +204,87 @@ function StudentDashboard() {
         <section className="section-card">
 
           <div className="section-card-header">
+
             <h2>My Recent Enrollments</h2>
 
-            <Link to="/my-enrollments" className="link-inline">
+            <Link
+              to="/my-enrollments"
+              className="link-inline"
+            >
               <FaEye /> View all
             </Link>
+
           </div>
 
 
-          {loading && <p className="loading">Loading...</p>}
+          {loading && (
+            <p className="loading">Loading...</p>
+          )}
 
 
           {!loading && recentEnrollments.length === 0 && (
+
             <p className="empty">
               You have not enrolled in any courses yet. Head over to the
               courses page and enroll in your first course.
             </p>
+
           )}
 
 
           {!loading && recentEnrollments.length > 0 && (
+
             <div className="table-wrapper">
+
               <table className="table">
+
                 <thead>
+
                   <tr>
                     <th>Course</th>
                     <th>Category</th>
                     <th>Level</th>
                     <th>Enrolled On</th>
                   </tr>
+
                 </thead>
 
                 <tbody>
+
                   {recentEnrollments.map((enrollment) => (
+
                     <tr key={enrollment.id}>
+
                       <td>
-                        <Link to={`/courses/${enrollment.course_id}`}>
+                        <Link
+                          to={`/courses/${enrollment.course_id}`}
+                        >
                           {enrollment.title}
                         </Link>
                       </td>
-                      <td>{enrollment.category}</td>
-                      <td>{enrollment.level}</td>
-                      <td>{formatDate(enrollment.enrolled_at)}</td>
+
+                      <td>
+                        {enrollment.category}
+                      </td>
+
+                      <td>
+                        {enrollment.level}
+                      </td>
+
+                      <td>
+                        {formatDate(enrollment.enrolled_at)}
+                      </td>
+
                     </tr>
+
                   ))}
+
                 </tbody>
+
               </table>
+
             </div>
+
           )}
 
         </section>
@@ -204,13 +300,26 @@ function StudentDashboard() {
 
           <div className="quick-actions">
 
-            <Link to="/courses" className="quick-action">
-              <span className="quick-action-icon"><FaBook /></span>
+            <Link
+              to="/courses"
+              className="quick-action"
+            >
+              <span className="quick-action-icon">
+                <FaBook />
+              </span>
+
               <span>Browse all courses</span>
             </Link>
 
-            <Link to="/my-enrollments" className="quick-action">
-              <span className="quick-action-icon"><FaGraduationCap /></span>
+
+            <Link
+              to="/my-enrollments"
+              className="quick-action"
+            >
+              <span className="quick-action-icon">
+                <FaGraduationCap />
+              </span>
+
               <span>View my enrollments</span>
             </Link>
 
@@ -227,5 +336,3 @@ function StudentDashboard() {
 }
 
 export default StudentDashboard;
-
-

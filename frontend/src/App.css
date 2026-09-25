@@ -1610,3 +1610,38 @@ textarea.input {
   }
 }
 
+.enrollment-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin: 24px 0;
+}
+
+.enrollment-toolbar label {
+  font-weight: 600;
+}
+
+.enrollment-toolbar select {
+  padding: 9px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #fff;
+  color: #111827;
+  cursor: pointer;
+}
+
+.enrollment-summary {
+  margin-bottom: 24px;
+}
+
+@media (max-width: 768px) {
+  .enrollment-toolbar {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .enrollment-toolbar select {
+    width: 100%;
+  }
+}
