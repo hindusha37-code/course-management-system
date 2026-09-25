@@ -19,7 +19,6 @@ function MyEnrollments() {
   const user = getUser();
 
 
-  // ---------- Load the logged-in student's enrollments ----------
   useEffect(() => {
 
     const getEnrollments = async () => {
@@ -49,7 +48,6 @@ function MyEnrollments() {
   }, []);
 
 
-  // ---------- Safely convert course price to a number ----------
   const getSafePrice = (price) => {
 
     const numericPrice = Number(price);
@@ -59,7 +57,7 @@ function MyEnrollments() {
   };
 
 
-  // ---------- Format enrollment date ----------
+
   const formatDate = (value) => {
 
     if (!value) return "-";
@@ -75,7 +73,7 @@ function MyEnrollments() {
   };
 
 
-  // ---------- Enrollment summary ----------
+
   const summary = useMemo(() => {
 
     const totalCourses = enrollments.length;
@@ -109,7 +107,7 @@ function MyEnrollments() {
   }, [enrollments]);
 
 
-  // ---------- Sort enrollments without modifying original API data ----------
+
   const sortedEnrollments = useMemo(() => {
 
     const sorted = [...enrollments];
@@ -213,14 +211,14 @@ function MyEnrollments() {
         </div>
 
 
-        {/* ---------- Loading ---------- */}
+     
 
         {loading && (
           <p className="loading">Loading your enrollments...</p>
         )}
 
 
-        {/* ---------- Error ---------- */}
+      
 
         {error && !loading && (
           <p className="error">{error}</p>
@@ -231,7 +229,7 @@ function MyEnrollments() {
 
           <>
 
-            {/* ---------- Enrollment Summary ---------- */}
+         
 
             <section className="dashboard-grid enrollment-summary">
 
@@ -281,7 +279,7 @@ function MyEnrollments() {
             </section>
 
 
-            {/* ---------- Empty state ---------- */}
+          
 
             {enrollments.length === 0 && (
 
@@ -301,7 +299,7 @@ function MyEnrollments() {
             )}
 
 
-            {/* ---------- Sorting and enrollment cards ---------- */}
+         
 
             {enrollments.length > 0 && (
 

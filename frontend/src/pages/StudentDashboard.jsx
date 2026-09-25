@@ -65,7 +65,7 @@ function StudentDashboard() {
   }, []);
 
 
-  // ---------- Safely convert course price to a number ----------
+ 
   const getSafePrice = (price) => {
 
     const numericPrice = Number(price);
@@ -75,7 +75,7 @@ function StudentDashboard() {
   };
 
 
-  // ---------- Calculate total enrolled-course value ----------
+
   const totalEnrollmentValue = useMemo(() => {
 
     return enrollments.reduce(
@@ -88,7 +88,7 @@ function StudentDashboard() {
   }, [enrollments]);
 
 
-  // Only show the 3 most recent enrollments on the dashboard
+
   const recentEnrollments = enrollments.slice(0, 3);
 
 
@@ -114,7 +114,7 @@ function StudentDashboard() {
 
       <div className="container">
 
-        {/* ---------- Welcome ---------- */}
+     
 
         <div className="page-header">
 
@@ -134,13 +134,11 @@ function StudentDashboard() {
         </div>
 
 
-        {/* ---------- Error ---------- */}
 
         {error && <p className="error">{error}</p>}
 
 
-        {/* ---------- Stat cards ---------- */}
-
+       
         <div className="dashboard-grid">
 
           <div className="dashboard-card">
@@ -199,7 +197,7 @@ function StudentDashboard() {
         </div>
 
 
-        {/* ---------- Recent enrollments ---------- */}
+      
 
         <section className="section-card">
 
@@ -290,7 +288,7 @@ function StudentDashboard() {
         </section>
 
 
-        {/* ---------- Quick actions ---------- */}
+     
 
         <section className="section-card">
 
