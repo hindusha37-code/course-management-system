@@ -2,7 +2,10 @@ const db = require("../config/db");
 
 const Enrollment = {
 
+  // =========================================================
   // Create enrollment
+  // =========================================================
+
   async create(studentId, courseId) {
     const [result] = await db.execute(
       `INSERT INTO enrollments
@@ -15,7 +18,10 @@ const Enrollment = {
   },
 
 
+  // =========================================================
   // Check if student is already enrolled
+  // =========================================================
+
   async findByStudentAndCourse(studentId, courseId) {
     const [rows] = await db.execute(
       `SELECT *
@@ -29,7 +35,10 @@ const Enrollment = {
   },
 
 
+  // =========================================================
   // Get all courses enrolled by a student
+  // =========================================================
+
   async getByStudent(studentId) {
     const [rows] = await db.execute(
       `SELECT
@@ -55,7 +64,10 @@ const Enrollment = {
   },
 
 
+  // =========================================================
   // Get all students enrolled in a course
+  // =========================================================
+
   async getByCourse(courseId) {
     const [rows] = await db.execute(
       `SELECT
@@ -76,7 +88,10 @@ const Enrollment = {
   },
 
 
+  // =========================================================
   // Get all enrollments
+  // =========================================================
+
   async getAll() {
     const [rows] = await db.execute(
       `SELECT
@@ -107,12 +122,38 @@ const Enrollment = {
   },
 
 
-  // Delete enrollment
+  // =========================================================
+  // Admin: Delete enrollment
+  // =========================================================
+
   async delete(id) {
     const [result] = await db.execute(
       `DELETE FROM enrollments
        WHERE id = ?`,
       [id]
+    );
+
+    return result;
+  },
+
+
+  // =========================================================
+  // Student: Delete ONLY own enrollment
+  // =========================================================
+  //
+  // SECURITY:
+  // Both ID and student_id are checked in the SQL query.
+  //
+  // A client cannot provide another student ID because
+  // studentId comes from req.user.id in the controller.
+  // =========================================================
+
+  async deleteByStudent(id, studentId) {
+    const [result] = await db.execute(
+      `DELETE FROM enrollments
+       WHERE id = ?
+       AND student_id = ?`,
+      [id, studentId]
     );
 
     return result;

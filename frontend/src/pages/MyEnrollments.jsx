@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaSearch } from "react-icons/fa";
+import { FaSearch, FaTimes } from "react-icons/fa";
 
 import api from "../services/api";
 import { getUser } from "../services/auth";
@@ -15,8 +15,33 @@ function MyEnrollments() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // Stores the enrollment currently being cancelled.
+  const [cancellingId, setCancellingId] = useState(null);
 
   const user = getUser();
+
+
+  // =========================================================
+  // Load enrollments
+  // =========================================================
+
+  const loadEnrollments = useCallback(async () => {
+    try {
+      setError("");
+
+      const response = await api.get("/enrollments/my");
+
+      setEnrollments(response.data.enrollments || []);
+
+    } catch (error) {
+      setError(
+        error.response?.data?.message ||
+        "Failed to load your enrollments"
+      );
+    }
+  }, []);
 
 
   useEffect(() => {
@@ -25,16 +50,7 @@ function MyEnrollments() {
 
       try {
 
-        const response = await api.get("/enrollments/my");
-
-        setEnrollments(response.data.enrollments || []);
-
-      } catch (error) {
-
-        setError(
-          error.response?.data?.message ||
-          "Failed to load your enrollments"
-        );
+        await loadEnrollments();
 
       } finally {
 
@@ -45,17 +61,85 @@ function MyEnrollments() {
 
     getEnrollments();
 
-  }, []);
+  }, [loadEnrollments]);
 
+
+  // =========================================================
+  // Cancel enrollment
+  // =========================================================
+
+  const handleCancelEnrollment = async (enrollmentId) => {
+
+    // Safety confirmation before cancellation.
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel this enrollment?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setError("");
+    setSuccess("");
+    setCancellingId(enrollmentId);
+
+    try {
+
+      const response = await api.delete(
+        `/enrollments/my/${enrollmentId}`
+      );
+
+      /*
+       * Remove the cancelled enrollment immediately from
+       * the local list.
+       *
+       * This avoids a full page reload.
+       */
+      setEnrollments((currentEnrollments) =>
+        currentEnrollments.filter(
+          (enrollment) => enrollment.id !== enrollmentId
+        )
+      );
+
+      setSuccess(
+        response.data.message ||
+        "Enrollment cancelled successfully."
+      );
+
+      /*
+       * Refresh the list from the backend after successful
+       * cancellation so the UI reflects server state.
+       */
+      await loadEnrollments();
+
+    } catch (error) {
+
+      setError(
+        error.response?.data?.message ||
+        "Failed to cancel enrollment. Please try again."
+      );
+
+    } finally {
+
+      setCancellingId(null);
+
+    }
+  };
+
+
+  // =========================================================
+  // Helpers
+  // =========================================================
 
   const getSafePrice = (price) => {
 
     const numericPrice = Number(price);
 
-    return Number.isFinite(numericPrice) ? numericPrice : 0;
+    return Number.isFinite(numericPrice)
+      ? numericPrice
+      : 0;
 
   };
-
 
 
   const formatDate = (value) => {
@@ -73,6 +157,9 @@ function MyEnrollments() {
   };
 
 
+  // =========================================================
+  // Summary
+  // =========================================================
 
   const summary = useMemo(() => {
 
@@ -107,6 +194,9 @@ function MyEnrollments() {
   }, [enrollments]);
 
 
+  // =========================================================
+  // Sorting
+  // =========================================================
 
   const sortedEnrollments = useMemo(() => {
 
@@ -146,14 +236,16 @@ function MyEnrollments() {
 
       case "price-high":
         sorted.sort((a, b) => {
-          return getSafePrice(b.price) - getSafePrice(a.price);
+          return getSafePrice(b.price) -
+            getSafePrice(a.price);
         });
         break;
 
 
       case "price-low":
         sorted.sort((a, b) => {
-          return getSafePrice(a.price) - getSafePrice(b.price);
+          return getSafePrice(a.price) -
+            getSafePrice(b.price);
         });
         break;
 
@@ -184,6 +276,10 @@ function MyEnrollments() {
   }, [enrollments, sortOption]);
 
 
+  // =========================================================
+  // Render
+  // =========================================================
+
   return (
 
     <>
@@ -203,7 +299,10 @@ function MyEnrollments() {
             </p>
           </div>
 
-          <Link to="/courses" className="btn btn-primary">
+          <Link
+            to="/courses"
+            className="btn btn-primary"
+          >
             <FaSearch />
             Browse More Courses
           </Link>
@@ -211,25 +310,37 @@ function MyEnrollments() {
         </div>
 
 
-     
+        {/* =================================================
+            Success / Error messages
+        ================================================= */}
 
-        {loading && (
-          <p className="loading">Loading your enrollments...</p>
+        {success && (
+          <p className="success">
+            {success}
+          </p>
         )}
-
-
-      
 
         {error && !loading && (
-          <p className="error">{error}</p>
+          <p className="error">
+            {error}
+          </p>
         )}
 
 
-        {!loading && !error && (
+        {loading && (
+          <p className="loading">
+            Loading your enrollments...
+          </p>
+        )}
+
+
+        {!loading && (
 
           <>
 
-         
+            {/* =============================================
+                Summary
+            ============================================= */}
 
             <section className="dashboard-grid enrollment-summary">
 
@@ -279,7 +390,9 @@ function MyEnrollments() {
             </section>
 
 
-          
+            {/* =============================================
+                Empty state
+            ============================================= */}
 
             {enrollments.length === 0 && (
 
@@ -289,7 +402,10 @@ function MyEnrollments() {
                   You are not enrolled in any courses yet.
                 </p>
 
-                <Link to="/courses" className="btn btn-primary">
+                <Link
+                  to="/courses"
+                  className="btn btn-primary"
+                >
                   <FaSearch />
                   Find a Course
                 </Link>
@@ -299,7 +415,9 @@ function MyEnrollments() {
             )}
 
 
-         
+            {/* =============================================
+                Enrollment list
+            ============================================= */}
 
             {enrollments.length > 0 && (
 
@@ -337,6 +455,7 @@ function MyEnrollments() {
                     <option value="title">
                       Course Title: A to Z
                     </option>
+
                   </select>
 
                 </div>
@@ -344,80 +463,117 @@ function MyEnrollments() {
 
                 <div className="course-grid">
 
-                  {sortedEnrollments.map((enrollment) => (
+                  {sortedEnrollments.map((enrollment) => {
 
-                    <article
-                      className="course-card"
-                      key={enrollment.id}
-                    >
+                    const isCancelling =
+                      cancellingId === enrollment.id;
 
-                      <img
-                        src={enrollment.image}
-                        alt={enrollment.title}
-                        className="course-card-image"
-                        loading="lazy"
-                      />
+                    return (
 
-                      <div className="course-card-body">
+                      <article
+                        className="course-card"
+                        key={enrollment.id}
+                      >
 
-                        <div className="course-card-tags">
+                        <img
+                          src={enrollment.image}
+                          alt={enrollment.title}
+                          className="course-card-image"
+                          loading="lazy"
+                        />
 
-                          <span className="tag tag-category">
-                            {enrollment.category}
-                          </span>
 
-                          <span className="tag tag-level">
-                            {enrollment.level}
-                          </span>
+                        <div className="course-card-body">
+
+                          <div className="course-card-tags">
+
+                            <span className="tag tag-category">
+                              {enrollment.category}
+                            </span>
+
+                            <span className="tag tag-level">
+                              {enrollment.level}
+                            </span>
+
+                          </div>
+
+
+                          <h3 className="course-card-title">
+                            {enrollment.title}
+                          </h3>
+
+
+                          <p className="course-card-summary">
+                            {enrollment.description?.slice(0, 100)}
+                            {enrollment.description?.length > 100
+                              ? "..."
+                              : ""}
+                          </p>
+
+
+                          <ul className="course-card-meta">
+
+                            <li>
+                              <strong>Duration:</strong>{" "}
+                              {enrollment.duration}
+                            </li>
+
+                            <li>
+                              <strong>Price:</strong>{" "}
+                              Rs.{" "}
+                              {getSafePrice(
+                                enrollment.price
+                              ).toFixed(2)}
+                            </li>
+
+                            <li>
+                              <strong>Enrolled on:</strong>{" "}
+                              {formatDate(
+                                enrollment.enrolled_at
+                              )}
+                            </li>
+
+                          </ul>
+
+
+                          <div className="enrollment-card-actions">
+
+                            <Link
+                              to={`/courses/${enrollment.course_id}`}
+                              className="btn btn-outline btn-block"
+                            >
+                              View Course
+                            </Link>
+
+
+                            <button
+                              type="button"
+                              className="btn btn-danger btn-block"
+                              onClick={() =>
+                                handleCancelEnrollment(
+                                  enrollment.id
+                                )
+                              }
+                              disabled={
+                                cancellingId !== null
+                              }
+                            >
+                              <FaTimes />
+
+                              {isCancelling
+                                ? "Cancelling..."
+                                : "Cancel Enrollment"}
+                            </button>
+
+                          </div>
 
                         </div>
 
+                      </article>
 
-                        <h3 className="course-card-title">
-                          {enrollment.title}
-                        </h3>
+                    );
 
-
-                        <p className="course-card-summary">
-                          {enrollment.description?.slice(0, 100)}
-                          {enrollment.description?.length > 100
-                            ? "..."
-                            : ""}
-                        </p>
-
-
-                        <ul className="course-card-meta">
-
-                          <li>
-                            <strong>Duration:</strong>{" "}
-                            {enrollment.duration}
-                          </li>
-
-                          <li>
-                            <strong>Price:</strong>{" "}
-                            Rs. {getSafePrice(enrollment.price).toFixed(2)}
-                          </li>
-
-                          <li>
-                            <strong>Enrolled on:</strong>{" "}
-                            {formatDate(enrollment.enrolled_at)}
-                          </li>
-
-                        </ul>
-
-
-                        <Link
-                          to={`/courses/${enrollment.course_id}`}
-                          className="btn btn-outline btn-block"
-                        >
-                          View Course
-                        </Link>
-
-                      </div>
-
-                    </article>
-
-                  ))}
+                  })}
 
                 </div>
 
@@ -434,6 +590,7 @@ function MyEnrollments() {
       <Footer />
 
     </>
+
   );
 }
 
