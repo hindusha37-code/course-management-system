@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 
@@ -15,19 +14,16 @@ import api from "../services/api";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
-
-
 const EMPTY_COURSE = {
   title: "",
   category: "",
   level: "Beginner",
   duration: "",
   price: "",
+  max_students: "",
   image: "",
   description: "",
 };
-
-
 
 const LEVEL_OPTIONS = [
   "Beginner",
@@ -35,17 +31,11 @@ const LEVEL_OPTIONS = [
   "Advanced",
 ];
 
-
-
-
 async function fetchAllCourses() {
   const response = await api.get("/courses");
 
   return response.data.courses || [];
 }
-
-
-
 
 function getDurationValue(duration) {
   if (!duration) {
@@ -72,10 +62,7 @@ function getDurationValue(duration) {
   return amount * unitInDays[unit];
 }
 
-
-
 function ManageCourses() {
-
   const [courses, setCourses] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -87,18 +74,11 @@ function ManageCourses() {
 
   const [formData, setFormData] = useState(EMPTY_COURSE);
 
-
   const [fieldErrors, setFieldErrors] = useState({});
 
- 
   const [formError, setFormError] = useState("");
 
- 
   const [saving, setSaving] = useState(false);
-
-
-
-
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -110,51 +90,32 @@ function ManageCourses() {
 
   const [sortDirection, setSortDirection] = useState("asc");
 
-
-
-
   useEffect(() => {
-
     const loadCourses = async () => {
-
       try {
-
         setCourses(await fetchAllCourses());
-
       } catch (error) {
-
         setError(
           error.response?.data?.message ||
-          "Failed to load courses"
+            "Failed to load courses"
         );
-
       } finally {
-
         setLoading(false);
-
       }
     };
 
     loadCourses();
-
   }, []);
-
-
-
-  
 
   const refreshCourses = async () => {
     setCourses(await fetchAllCourses());
   };
 
-
-
-
-
   const categoryOptions = useMemo(() => {
-
     const categories = courses
-      .map((course) => String(course.category || "").trim())
+      .map((course) =>
+        String(course.category || "").trim()
+      )
       .filter(Boolean);
 
     return [...new Set(categories)].sort((a, b) =>
@@ -162,21 +123,15 @@ function ManageCourses() {
         sensitivity: "base",
       })
     );
-
   }, [courses]);
 
-
-
-
-
   const displayedCourses = useMemo(() => {
-
     const search = searchTerm.trim().toLowerCase();
 
-
     const filtered = courses.filter((course) => {
-
-      const title = String(course.title || "").toLowerCase();
+      const title = String(
+        course.title || ""
+      ).toLowerCase();
 
       const category = String(
         course.category || ""
@@ -212,61 +167,46 @@ function ManageCourses() {
       );
     });
 
-
-
-   
-
     if (!sortField) {
       return filtered;
     }
 
-
-
     const sorted = [...filtered];
 
-
-
     sorted.sort((a, b) => {
-
       let comparison = 0;
 
-
-
-
       if (sortField === "id") {
-
         comparison =
           Number(a.id || 0) -
           Number(b.id || 0);
-
-      }
-
-
-
-      // Numeric price
-      else if (sortField === "price") {
-
+      } else if (sortField === "price") {
         comparison =
           Number(a.price || 0) -
           Number(b.price || 0);
+      } else if (sortField === "max_students") {
+        const aValue =
+          a.max_students === null ||
+          a.max_students === undefined
+            ? Number.POSITIVE_INFINITY
+            : Number(a.max_students);
 
-      }
+        const bValue =
+          b.max_students === null ||
+          b.max_students === undefined
+            ? Number.POSITIVE_INFINITY
+            : Number(b.max_students);
 
-
-
-     
-      else if (sortField === "duration") {
-
+        comparison = aValue - bValue;
+      } else if (sortField === "enrolled_count") {
+        comparison =
+          Number(a.enrolled_count || 0) -
+          Number(b.enrolled_count || 0);
+      } else if (sortField === "duration") {
         comparison =
           getDurationValue(a.duration) -
           getDurationValue(b.duration);
-
-      }
-
-
-
-      else {
-
+      } else {
         const valueA = String(
           a[sortField] ?? ""
         ).trim();
@@ -285,26 +225,18 @@ function ManageCourses() {
         );
       }
 
-
-
       if (comparison === 0) {
-
         comparison =
           Number(a.id || 0) -
           Number(b.id || 0);
       }
-
-
 
       return sortDirection === "asc"
         ? comparison
         : -comparison;
     });
 
-
-
     return sorted;
-
   }, [
     courses,
     searchTerm,
@@ -314,32 +246,20 @@ function ManageCourses() {
     sortDirection,
   ]);
 
-
-
-
   const handleSort = (field) => {
-
     if (sortField === field) {
-
       setSortDirection((previous) =>
         previous === "asc"
           ? "desc"
           : "asc"
       );
-
     } else {
-
       setSortField(field);
-
       setSortDirection("asc");
     }
   };
 
-
-
-  // Sorting indicator
   const getSortIndicator = (field) => {
-
     if (sortField !== field) {
       return "";
     }
@@ -349,14 +269,7 @@ function ManageCourses() {
       : " ↓";
   };
 
-
-
-  // ======================================================
-  // CR-003: Reset filters
-  // ======================================================
-
   const resetFilters = () => {
-
     setSearchTerm("");
     setCategoryFilter("All");
     setLevelFilter("All");
@@ -364,12 +277,7 @@ function ManageCourses() {
     setSortDirection("asc");
   };
 
-
-
-  
-
   const handleChange = (event) => {
-
     const { name, value } = event.target;
 
     setFormData((previous) => ({
@@ -377,7 +285,6 @@ function ManageCourses() {
       [name]: value,
     }));
 
-    
     setFieldErrors((previous) => ({
       ...previous,
       [name]: "",
@@ -386,10 +293,7 @@ function ManageCourses() {
     setFormError("");
   };
 
-
-
   const openAddForm = () => {
-
     setShowForm(true);
     setEditingId(null);
 
@@ -403,10 +307,7 @@ function ManageCourses() {
     setSuccess("");
   };
 
-
-
   const openEditForm = (course) => {
-
     setShowForm(true);
     setEditingId(course.id);
 
@@ -416,6 +317,11 @@ function ManageCourses() {
       level: course.level || "Beginner",
       duration: course.duration || "",
       price: String(course.price ?? ""),
+      max_students:
+        course.max_students === null ||
+        course.max_students === undefined
+          ? ""
+          : String(course.max_students),
       image: course.image || "",
       description: course.description || "",
     });
@@ -426,10 +332,7 @@ function ManageCourses() {
     setSuccess("");
   };
 
-
-
   const closeForm = () => {
-
     setShowForm(false);
     setEditingId(null);
 
@@ -441,13 +344,9 @@ function ManageCourses() {
     setFormError("");
   };
 
-
-
   const handleSubmit = async (event) => {
-
     event.preventDefault();
 
-    
     if (saving) {
       return;
     }
@@ -457,90 +356,76 @@ function ManageCourses() {
     setError("");
     setSuccess("");
 
-
-
- 
-
     if (!formData.title.trim()) {
-
       setFieldErrors({
         title: "Title is required",
       });
-
       return;
     }
 
-
-
     if (!formData.category.trim()) {
-
       setFieldErrors({
         category: "Category is required",
       });
-
       return;
     }
 
-
-
     if (!formData.duration.trim()) {
-
       setFieldErrors({
         duration: "Duration is required",
       });
-
       return;
     }
 
-
-
     if (formData.price === "") {
-
       setFieldErrors({
         price: "Price is required",
       });
-
       return;
     }
 
+    // CR-007 frontend validation
+    if (
+      formData.max_students !== "" &&
+      !/^[1-9]\d*$/.test(
+        String(formData.max_students).trim()
+      )
+    ) {
+      setFieldErrors({
+        max_students:
+          "Maximum students must be a positive whole number or left blank.",
+      });
+      return;
+    }
 
-
-    
     const coursePayload = {
       title: formData.title.trim(),
       category: formData.category.trim(),
       level: formData.level,
       duration: formData.duration.trim(),
       price: formData.price,
+
+      // Blank = unlimited
+      max_students:
+        formData.max_students === ""
+          ? null
+          : Number(formData.max_students),
+
       image: formData.image.trim(),
       description: formData.description.trim(),
     };
 
-
-
     setSaving(true);
 
-
-
     try {
-
-      
-
       if (editingId) {
-
         const response = await api.put(
           `/courses/${editingId}`,
           coursePayload
         );
 
         setSuccess(response.data.message);
-
-      }
-
-      
-
-      else {
-
+      } else {
         const response = await api.post(
           "/courses",
           coursePayload
@@ -549,50 +434,34 @@ function ManageCourses() {
         setSuccess(response.data.message);
       }
 
-
-
       closeForm();
 
       await refreshCourses();
-
     } catch (error) {
+      const responseData =
+        error.response?.data;
 
-      const responseData = error.response?.data;
-
-
-
-     
       if (
         error.response?.status === 400 &&
         responseData?.errors
       ) {
-
         setFieldErrors(responseData.errors);
 
         setFormError(
           "Please correct the highlighted fields."
         );
-
       } else {
-
         setFormError(
           responseData?.message ||
-          "Could not save the course. Please try again."
+            "Could not save the course. Please try again."
         );
       }
-
     } finally {
-
       setSaving(false);
-
     }
   };
 
-
-
-
   const handleDelete = async (course) => {
-
     const confirmed = window.confirm(
       `Delete "${course.title}"? This cannot be undone.`
     );
@@ -604,54 +473,36 @@ function ManageCourses() {
     setError("");
     setSuccess("");
 
-
-
     try {
-
       const response = await api.delete(
         `/courses/${course.id}`
       );
 
       setSuccess(response.data.message);
 
-   
       await refreshCourses();
-
     } catch (error) {
-
       setError(
         error.response?.data?.message ||
-        "Could not delete the course."
+          "Could not delete the course."
       );
-
     }
   };
-
-
-
 
   return (
     <>
       <Navbar />
 
-
-
       <div className="container">
-
         <div className="page-header">
-
           <div>
-
             <h1>Manage Courses</h1>
 
             <p className="page-subtitle">
               Add new courses, update existing ones, or
               remove courses that are no longer offered.
             </p>
-
           </div>
-
-
 
           <button
             type="button"
@@ -663,7 +514,6 @@ function ManageCourses() {
             }
             disabled={saving}
           >
-
             {showForm ? (
               <FaTimes />
             ) : (
@@ -673,13 +523,8 @@ function ManageCourses() {
             {showForm
               ? "Cancel"
               : "Add Course"}
-
           </button>
-
         </div>
-
-
-
 
         {success && (
           <p className="success">
@@ -693,38 +538,23 @@ function ManageCourses() {
           </p>
         )}
 
-
-
-
-
         {showForm && (
-
           <section className="section-card">
-
             <div className="section-card-header">
-
               <h2>
                 {editingId
                   ? "Edit Course"
                   : "New Course"}
               </h2>
-
             </div>
-
-
 
             <form
               className="form"
               onSubmit={handleSubmit}
               noValidate
             >
-
-           
-
               <div className="form-row">
-
                 <div className="form-group">
-
                   <label htmlFor="title">
                     Title *
                   </label>
@@ -749,13 +579,9 @@ function ManageCourses() {
                       {fieldErrors.title}
                     </p>
                   )}
-
                 </div>
 
-
-
                 <div className="form-group">
-
                   <label htmlFor="category">
                     Category *
                   </label>
@@ -780,19 +606,11 @@ function ManageCourses() {
                       {fieldErrors.category}
                     </p>
                   )}
-
                 </div>
-
               </div>
 
-
-
-           
-
               <div className="form-row">
-
                 <div className="form-group">
-
                   <label htmlFor="level">
                     Level *
                   </label>
@@ -809,7 +627,6 @@ function ManageCourses() {
                     onChange={handleChange}
                     disabled={saving}
                   >
-
                     {LEVEL_OPTIONS.map(
                       (level) => (
                         <option
@@ -820,7 +637,6 @@ function ManageCourses() {
                         </option>
                       )
                     )}
-
                   </select>
 
                   {fieldErrors.level && (
@@ -828,13 +644,9 @@ function ManageCourses() {
                       {fieldErrors.level}
                     </p>
                   )}
-
                 </div>
 
-
-
                 <div className="form-group">
-
                   <label htmlFor="duration">
                     Duration *
                   </label>
@@ -859,13 +671,9 @@ function ManageCourses() {
                       {fieldErrors.duration}
                     </p>
                   )}
-
                 </div>
 
-
-
                 <div className="form-group">
-
                   <label htmlFor="price">
                     Price (Rs.) *
                   </label>
@@ -892,17 +700,49 @@ function ManageCourses() {
                       {fieldErrors.price}
                     </p>
                   )}
-
                 </div>
-
               </div>
 
+              {/* =====================================================
+                  CR-007: Maximum Students
+                  ===================================================== */}
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="max_students">
+                    Maximum Students
+                  </label>
 
+                  <input
+                    id="max_students"
+                    className={`input ${
+                      fieldErrors.max_students
+                        ? "input-error"
+                        : ""
+                    }`}
+                    type="number"
+                    min="1"
+                    step="1"
+                    name="max_students"
+                    value={formData.max_students}
+                    onChange={handleChange}
+                    placeholder="e.g. 30 (blank = Unlimited)"
+                    disabled={saving}
+                  />
 
-             
+                  <small className="form-help">
+                    Leave blank for unlimited
+                    enrollment.
+                  </small>
+
+                  {fieldErrors.max_students && (
+                    <p className="field-error">
+                      {fieldErrors.max_students}
+                    </p>
+                  )}
+                </div>
+              </div>
 
               <div className="form-group">
-
                 <label htmlFor="image">
                   Image URL
                 </label>
@@ -927,14 +767,9 @@ function ManageCourses() {
                     {fieldErrors.image}
                   </p>
                 )}
-
               </div>
 
-
-
-
               <div className="form-group">
-
                 <label htmlFor="description">
                   Description
                 </label>
@@ -959,11 +794,7 @@ function ManageCourses() {
                     {fieldErrors.description}
                   </p>
                 )}
-
               </div>
-
-
-
 
               {formError && (
                 <p className="error">
@@ -971,27 +802,20 @@ function ManageCourses() {
                 </p>
               )}
 
-
-
               <div className="form-actions">
-
                 <button
                   type="submit"
                   className="btn btn-primary"
                   disabled={saving}
                 >
-
                   <FaSave />
 
                   {saving
                     ? "Saving..."
                     : editingId
-                      ? "Update Course"
-                      : "Create Course"}
-
+                    ? "Update Course"
+                    : "Create Course"}
                 </button>
-
-
 
                 <button
                   type="button"
@@ -999,30 +823,17 @@ function ManageCourses() {
                   onClick={closeForm}
                   disabled={saving}
                 >
-
                   <FaTimes />
-
                   Cancel
-
                 </button>
-
               </div>
-
             </form>
-
           </section>
         )}
 
-
-
-
         <section className="section-card">
-
           <div className="section-card-header">
-
-            <h2>
-              Course List
-            </h2>
+            <h2>Course List</h2>
 
             <Link
               to="/admin/enrollments"
@@ -1031,17 +842,10 @@ function ManageCourses() {
               <FaEye />
               Manage enrollments
             </Link>
-
           </div>
 
-
-
-         
-
           <div className="course-controls">
-
             <div className="form-group">
-
               <label htmlFor="course-search">
                 Search Courses
               </label>
@@ -1052,19 +856,15 @@ function ManageCourses() {
                 className="input"
                 value={searchTerm}
                 onChange={(event) =>
-                  setSearchTerm(event.target.value)
+                  setSearchTerm(
+                    event.target.value
+                  )
                 }
                 placeholder="Search by title, category or course ID..."
               />
-
             </div>
 
-
-
-          
-
             <div className="form-group">
-
               <label htmlFor="category-filter">
                 Category
               </label>
@@ -1074,10 +874,11 @@ function ManageCourses() {
                 className="input"
                 value={categoryFilter}
                 onChange={(event) =>
-                  setCategoryFilter(event.target.value)
+                  setCategoryFilter(
+                    event.target.value
+                  )
                 }
               >
-
                 <option value="All">
                   All
                 </option>
@@ -1092,17 +893,10 @@ function ManageCourses() {
                     </option>
                   )
                 )}
-
               </select>
-
             </div>
 
-
-
-         
-
             <div className="form-group">
-
               <label htmlFor="level-filter">
                 Level
               </label>
@@ -1112,10 +906,11 @@ function ManageCourses() {
                 className="input"
                 value={levelFilter}
                 onChange={(event) =>
-                  setLevelFilter(event.target.value)
+                  setLevelFilter(
+                    event.target.value
+                  )
                 }
               >
-
                 <option value="All">
                   All
                 </option>
@@ -1130,20 +925,11 @@ function ManageCourses() {
                     </option>
                   )
                 )}
-
               </select>
-
             </div>
 
-
-
-            {/* Reset */}
-
             <div className="form-group filter-reset-group">
-
-              <label>
-                &nbsp;
-              </label>
+              <label>&nbsp;</label>
 
               <button
                 type="button"
@@ -1152,19 +938,11 @@ function ManageCourses() {
               >
                 Reset Filters
               </button>
-
             </div>
-
           </div>
 
-
-
-          
-
           {!loading && (
-
             <div className="result-counter">
-
               Showing{" "}
               <strong>
                 {displayedCourses.length}
@@ -1174,12 +952,8 @@ function ManageCourses() {
                 {courses.length}
               </strong>{" "}
               courses
-
             </div>
-
           )}
-
-
 
           {loading && (
             <p className="loading">
@@ -1187,33 +961,19 @@ function ManageCourses() {
             </p>
           )}
 
-
-
-      
-
           {!loading &&
             courses.length === 0 && (
-
               <p className="empty">
                 No courses yet. Click "Add Course"
                 to create the first one.
               </p>
-
             )}
-
-
-
-          
 
           {!loading &&
             courses.length > 0 &&
             displayedCourses.length === 0 && (
-
               <div className="no-results">
-
-                <p>
-                  No courses found.
-                </p>
+                <p>No courses found.</p>
 
                 <button
                   type="button"
@@ -1222,26 +982,15 @@ function ManageCourses() {
                 >
                   Reset Filters
                 </button>
-
               </div>
-
             )}
-
-
-
-          {/* Course table */}
 
           {!loading &&
             displayedCourses.length > 0 && (
-
               <div className="table-wrapper">
-
                 <table className="table">
-
                   <thead>
-
                     <tr>
-
                       <th>
                         <button
                           type="button"
@@ -1255,9 +1004,7 @@ function ManageCourses() {
                         </button>
                       </th>
 
-                      <th>
-                        Image
-                      </th>
+                      <th>Image</th>
 
                       <th>
                         <button
@@ -1281,7 +1028,9 @@ function ManageCourses() {
                           }
                         >
                           Category
-                          {getSortIndicator("category")}
+                          {getSortIndicator(
+                            "category"
+                          )}
                         </button>
                       </th>
 
@@ -1307,7 +1056,9 @@ function ManageCourses() {
                           }
                         >
                           Duration
-                          {getSortIndicator("duration")}
+                          {getSortIndicator(
+                            "duration"
+                          )}
                         </button>
                       </th>
 
@@ -1324,92 +1075,120 @@ function ManageCourses() {
                         </button>
                       </th>
 
+                      {/* CR-007 */}
+                      <th>
+                        <button
+                          type="button"
+                          className="sort-button"
+                          onClick={() =>
+                            handleSort(
+                              "max_students"
+                            )
+                          }
+                        >
+                          Capacity
+                          {getSortIndicator(
+                            "max_students"
+                          )}
+                        </button>
+                      </th>
+
+                      {/* CR-007 */}
+                      <th>Enrollment</th>
+
                       <th className="table-actions-column">
                         Actions
                       </th>
-
                     </tr>
-
                   </thead>
 
-
-
                   <tbody>
-
                     {displayedCourses.map(
                       (course) => (
-
                         <tr key={course.id}>
+                          <td>{course.id}</td>
 
                           <td>
-                            {course.id}
-                          </td>
-
-
-
-                          <td>
-
                             {course.image ? (
-
                               <img
                                 src={course.image}
                                 alt={course.title}
                                 className="table-thumb"
                               />
-
                             ) : (
-
                               "-"
-
                             )}
-
                           </td>
 
-
-
-                          <td>
-                            {course.title}
-                          </td>
-
-
+                          <td>{course.title}</td>
 
                           <td>
                             {course.category}
                           </td>
 
-
-
                           <td>
-
                             <span className="tag tag-level">
                               {course.level}
                             </span>
-
                           </td>
-
-
 
                           <td>
                             {course.duration}
                           </td>
 
-
-
                           <td>
                             Rs. {course.price}
                           </td>
 
+                          {/* CR-007 Capacity */}
+                          <td>
+                            {course.max_students ===
+                              null ||
+                            course.max_students ===
+                              undefined ? (
+                              <span className="tag">
+                                Unlimited
+                              </span>
+                            ) : (
+                              `${course.max_students} students`
+                            )}
+                          </td>
 
+                          {/* CR-007 Enrollment */}
+                          <td>
+                            {course.max_students ===
+                              null ||
+                            course.max_students ===
+                              undefined ? (
+                              `${course.enrolled_count || 0} students`
+                            ) : (
+                              <>
+                                {course.enrolled_count ||
+                                  0}{" "}
+                                /{" "}
+                                {
+                                  course.max_students
+                                }
+
+                                {course.is_full && (
+                                  <span className="tag">
+                                    {" "}
+                                    Full
+                                  </span>
+                                )}
+                              </>
+                            )}
+                          </td>
 
                           <td>
-
                             <div className="table-actions">
-
                               <button
                                 type="button"
                                 className="btn btn-small btn-outline"
                                 onClick={() =>
-                                  openEditForm(course)
+                                  openEditForm(
+                                    course
+                                  )
                                 }
                                 disabled={saving}
                               >
@@ -1417,49 +1196,34 @@ function ManageCourses() {
                                 Edit
                               </button>
 
-
-
                               <button
                                 type="button"
                                 className="btn btn-small btn-danger"
                                 onClick={() =>
-                                  handleDelete(course)
+                                  handleDelete(
+                                    course
+                                  )
                                 }
                                 disabled={saving}
                               >
                                 <FaTrash />
                                 Delete
                               </button>
-
                             </div>
-
                           </td>
-
                         </tr>
-
                       )
                     )}
-
                   </tbody>
-
                 </table>
-
               </div>
-
             )}
-
         </section>
-
       </div>
-
-
 
       <Footer />
     </>
   );
 }
 
-
-
 export default ManageCourses;
-
