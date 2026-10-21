@@ -1295,125 +1295,96 @@ textarea.input {
 }
 
 
-/* =========================================
-   16. Responsive rules
-   ========================================= */
+/* CR-008: Enrollment filtering and pagination */
 
-@media (max-width: 900px) {
-
-  .hero-inner {
-    grid-template-columns: 1fr;
-    padding: 50px 0;
-    gap: 34px;
-  }
-
-  .hero-title {
-    font-size: 2rem;
-  }
-
-  .stats-inner {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .details-layout {
-    grid-template-columns: 1fr;
-    gap: 26px;
-  }
-
-  .footer-inner {
-    grid-template-columns: 1fr 1fr;
-  }
-
+.cr008-filters {
+  margin-bottom: 24px;
+  padding: 20px;
 }
 
-
-@media (max-width: 760px) {
-
-  /* Show the hamburger button */
-  .navbar-toggle {
-    display: inline-flex;
-  }
-
-  /* Hide the links until the menu is opened */
-  .navbar-links {
-    display: none;
-  }
-
-  .navbar-links.open {
-    display: flex;
-
-    flex-direction: column;
-    align-items: stretch;
-
-    width: 100%;
-
-    gap: 4px;
-
-    padding: 14px 0 20px;
-  }
-
-  .nav-link {
-    padding: 10px 0;
-
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .nav-link.active {
-    border-bottom-color: var(--color-border);
-  }
-
-  .navbar-user {
-    flex-direction: column;
-    align-items: stretch;
-
-    gap: 10px;
-
-    padding-top: 12px;
-  }
-
-  .navbar-username {
-    justify-content: flex-start;
-  }
-
-  .table-actions {
-    flex-direction: column;
-  }
-
+.cr008-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  align-items: end;
 }
 
+.cr008-filter-grid .form-group {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.cr008-filter-grid label {
+  display: block;
+  margin-bottom: 7px;
+  font-weight: 600;
+}
+
+.cr008-filter-grid .input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.cr008-reset-wrap .btn {
+  width: 100%;
+}
+
+.cr008-total {
+  margin: 0;
+  color: #666;
+  font-size: 0.95rem;
+}
+
+.cr008-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 20px 0 4px;
+  border-top: 1px solid #e5e7eb;
+  margin-top: 18px;
+}
+
+.cr008-range,
+.cr008-page-info {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.cr008-pagination-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cr008-pagination-buttons .btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1000px) {
+  .cr008-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 
 @media (max-width: 600px) {
-
-  .container {
-    width: 94%;
-    margin: 26px auto 40px;
-  }
-
-  h1 {
-    font-size: 1.6rem;
-  }
-
-  .hero-title {
-    font-size: 1.7rem;
-  }
-
-  .stats-inner {
+  .cr008-filter-grid {
     grid-template-columns: 1fr;
   }
 
-  .footer-inner {
-    grid-template-columns: 1fr;
-  }
-
-  .page-header {
+  .cr008-pagination {
+    align-items: flex-start;
     flex-direction: column;
-    align-items: stretch;
   }
 
-  .details-layout {
-    padding: 20px;
+  .cr008-pagination-buttons {
+    width: 100%;
   }
 
+  .cr008-pagination-buttons .btn {
+    flex: 1;
+  }
 }
-
-
