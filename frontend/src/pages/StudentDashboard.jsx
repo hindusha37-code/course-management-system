@@ -1,92 +1,98 @@
+
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { FaBook, FaEye, FaGraduationCap, FaSearch } from "react-icons/fa";
+import {
+  FaBook,
+  FaEye,
+  FaGraduationCap,
+  FaSearch,
+} from "react-icons/fa";
 
 import api from "../services/api";
 import { getUser } from "../services/auth";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 
+const EMPTY_REPORT = {
+  enrolledCourses: 0,
+  distinctCategories: 0,
+  earliestEnrollmentDate: null,
+  latestEnrollmentDate: null,
+  recentEnrollments: [],
+};
 
 function StudentDashboard() {
-
-  const [enrollments, setEnrollments] = useState([]);
-
-  const [stats, setStats] = useState({
-    courseCount: 0,
-    studentCount: 0,
-  });
-
+  const [report, setReport] = useState(EMPTY_REPORT);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const user = getUser();
 
-
   useEffect(() => {
+    let active = true;
 
     const loadDashboard = async () => {
-
       try {
+        const response = await api.get("/reports/my");
 
-        const [enrollmentsResponse, statsResponse] = await Promise.all([
-          api.get("/enrollments/my"),
-          api.get("/courses/stats"),
-        ]);
+        // Supports either a direct report object or { report: ... }.
+        const data = response.data?.report ?? response.data;
 
-        setEnrollments(enrollmentsResponse.data.enrollments);
+        if (!active) return;
 
-        setStats({
-          courseCount: statsResponse.data.courseCount,
-          studentCount: statsResponse.data.studentCount,
+        setReport({
+          ...EMPTY_REPORT,
+          ...data,
+          recentEnrollments: data.recentEnrollments ?? [],
         });
-
       } catch (error) {
+        if (!active) return;
 
         setError(
           error.response?.data?.message ||
-          "Failed to load your dashboard"
+            "Failed to load your learning report. Please try again later."
         );
-
       } finally {
-
-        setLoading(false);
-
+        if (active) setLoading(false);
       }
     };
 
     loadDashboard();
 
+    return () => {
+      active = false;
+    };
   }, []);
 
+  const formatNumber = (value) => {
+    const number = Number(value);
 
-  // Only show the 3 most recent enrollments on the dashboard
-  const recentEnrollments = enrollments.slice(0, 3);
-
+    return Number.isFinite(number)
+      ? number.toLocaleString()
+      : "0";
+  };
 
   const formatDate = (value) => {
     if (!value) return "-";
 
-    return new Date(value).toLocaleDateString();
+    const date = new Date(value);
+
+    return Number.isNaN(date.getTime())
+      ? "-"
+      : date.toLocaleDateString();
   };
 
-
   return (
-
     <>
       <Navbar />
 
       <div className="container">
-
-        {/* ---------- Welcome ---------- */}
-
         <div className="page-header">
-
           <div>
             <h1>Student Dashboard</h1>
-
             <p className="page-subtitle">
               Welcome back, {user?.full_name || user?.username}!
+              {" "}Here is your learning activity.
             </p>
           </div>
 
@@ -94,22 +100,19 @@ function StudentDashboard() {
             <FaSearch />
             Browse Courses
           </Link>
-
         </div>
 
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
 
-        {/* ---------- Error ---------- */}
-
-        {error && <p className="error">{error}</p>}
-
-
-        {/* ---------- Stat cards ---------- */}
-
+        {/* Personal learning statistics */}
         <div className="dashboard-grid">
-
           <div className="dashboard-card">
             <span className="dashboard-card-value">
-              {loading ? "..." : enrollments.length}
+              {loading ? "..." : formatNumber(report.enrolledCourses)}
             </span>
             <span className="dashboard-card-label">
               My Enrolled Courses
@@ -118,29 +121,38 @@ function StudentDashboard() {
 
           <div className="dashboard-card">
             <span className="dashboard-card-value">
-              {loading ? "..." : stats.courseCount}
+              {loading ? "..." : formatNumber(report.distinctCategories)}
             </span>
             <span className="dashboard-card-label">
-              Courses Available
+              Categories Explored
             </span>
           </div>
 
           <div className="dashboard-card">
-            <span className="dashboard-card-value">
-              {loading ? "..." : stats.studentCount}
+            <span className="dashboard-card-value dashboard-card-date">
+              {loading
+                ? "..."
+                : formatDate(report.earliestEnrollmentDate)}
             </span>
             <span className="dashboard-card-label">
-              Registered Students
+              First Enrollment
             </span>
           </div>
 
+          <div className="dashboard-card">
+            <span className="dashboard-card-value dashboard-card-date">
+              {loading
+                ? "..."
+                : formatDate(report.latestEnrollmentDate)}
+            </span>
+            <span className="dashboard-card-label">
+              Latest Enrollment
+            </span>
+          </div>
         </div>
 
-
-        {/* ---------- Recent enrollments ---------- */}
-
+        {/* Recent personal enrollments */}
         <section className="section-card">
-
           <div className="section-card-header">
             <h2>My Recent Enrollments</h2>
 
@@ -149,19 +161,20 @@ function StudentDashboard() {
             </Link>
           </div>
 
-
-          {loading && <p className="loading">Loading...</p>}
-
-
-          {!loading && recentEnrollments.length === 0 && (
-            <p className="empty">
-              You have not enrolled in any courses yet. Head over to the
-              courses page and enroll in your first course.
-            </p>
+          {loading && (
+            <p className="loading">Loading your learning report...</p>
           )}
 
+          {!loading &&
+            !error &&
+            report.recentEnrollments.length === 0 && (
+              <p className="empty">
+                You have not enrolled in any courses yet.
+                Browse the courses page to get started.
+              </p>
+            )}
 
-          {!loading && recentEnrollments.length > 0 && (
+          {!loading && report.recentEnrollments.length > 0 && (
             <div className="table-wrapper">
               <table className="table">
                 <thead>
@@ -174,15 +187,15 @@ function StudentDashboard() {
                 </thead>
 
                 <tbody>
-                  {recentEnrollments.map((enrollment) => (
+                  {report.recentEnrollments.map((enrollment) => (
                     <tr key={enrollment.id}>
                       <td>
                         <Link to={`/courses/${enrollment.course_id}`}>
-                          {enrollment.title}
+                          {enrollment.title || "Untitled course"}
                         </Link>
                       </td>
-                      <td>{enrollment.category}</td>
-                      <td>{enrollment.level}</td>
+                      <td>{enrollment.category || "-"}</td>
+                      <td>{enrollment.level || "-"}</td>
                       <td>{formatDate(enrollment.enrolled_at)}</td>
                     </tr>
                   ))}
@@ -190,42 +203,35 @@ function StudentDashboard() {
               </table>
             </div>
           )}
-
         </section>
 
-
-        {/* ---------- Quick actions ---------- */}
-
+        {/* Quick actions */}
         <section className="section-card">
-
           <div className="section-card-header">
             <h2>Quick Actions</h2>
           </div>
 
           <div className="quick-actions">
-
             <Link to="/courses" className="quick-action">
-              <span className="quick-action-icon"><FaBook /></span>
+              <span className="quick-action-icon">
+                <FaBook />
+              </span>
               <span>Browse all courses</span>
             </Link>
 
             <Link to="/my-enrollments" className="quick-action">
-              <span className="quick-action-icon"><FaGraduationCap /></span>
+              <span className="quick-action-icon">
+                <FaGraduationCap />
+              </span>
               <span>View my enrollments</span>
             </Link>
-
           </div>
-
         </section>
-
       </div>
 
       <Footer />
-
     </>
   );
 }
 
 export default StudentDashboard;
-
-

@@ -12,6 +12,7 @@ const DEFAULT_PAGINATION = {
   totalPages: 0,
 };
 
+
 function AdminEnrollments() {
   const [enrollments, setEnrollments] = useState([]);
   const [courses, setCourses] = useState([]);
