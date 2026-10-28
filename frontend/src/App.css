@@ -1447,3 +1447,251 @@ textarea.input {
   }
 }
 
+
+/* ========================================
+   MY PROFILE PAGE - CR-010
+======================================== */
+
+.profile-page {
+  width: min(900px, calc(100% - 32px));
+  margin: 45px auto;
+  color: #1e293b;
+  font-family: inherit;
+}
+
+/* Page heading */
+.profile-heading {
+  margin-bottom: 28px;
+}
+
+.profile-heading h1 {
+  font-size: 32px;
+  font-weight: 750;
+  color: #0f172a;
+  margin: 0 0 10px;
+  letter-spacing: -0.7px;
+}
+
+.profile-heading p {
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* Profile cards */
+.profile-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 28px;
+  margin-bottom: 24px;
+  box-shadow: 0 6px 24px rgba(15, 23, 42, 0.05);
+  transition: box-shadow 0.2s ease;
+}
+
+.profile-card:hover {
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+}
+
+.profile-card h2 {
+  color: #0f172a;
+  font-size: 21px;
+  font-weight: 700;
+  margin: 0 0 22px;
+}
+
+/* Profile information */
+.profile-details {
+  margin: 0;
+}
+
+.profile-details > div {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  padding: 17px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.profile-details > div:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.profile-details dt {
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.profile-details dd {
+  color: #1e293b;
+  font-size: 15px;
+  font-weight: 500;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Admin / Student role badge */
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 5px 12px;
+  border-radius: 20px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+/* Form fields */
+.profile-field {
+  margin-bottom: 22px;
+}
+
+.profile-field label {
+  display: block;
+  margin-bottom: 9px;
+  color: #334155;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.profile-field input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 47px;
+  padding: 12px 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 15px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.profile-field input::placeholder {
+  color: #94a3b8;
+}
+
+.profile-field input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+}
+
+.profile-field input[aria-invalid="true"] {
+  border-color: #dc2626;
+  background: #fffafa;
+}
+
+.profile-field input:disabled {
+  background: #f8fafc;
+  color: #64748b;
+  cursor: not-allowed;
+}
+
+/* Helper text */
+.profile-hint {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 8px 0 18px;
+}
+
+/* Field-level errors */
+.field-error {
+  color: #dc2626;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: 7px 0 0;
+}
+
+/* Success and error messages */
+.profile-alert {
+  padding: 14px 16px;
+  margin-bottom: 22px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.profile-alert.success {
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.profile-alert.error {
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+/* Form buttons */
+.profile-card button {
+  min-height: 44px;
+  padding: 11px 22px;
+  border: none;
+  border-radius: 9px;
+  background: #2563eb;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.profile-card button:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.profile-card button:focus-visible {
+  outline: 3px solid #93c5fd;
+  outline-offset: 3px;
+}
+
+.profile-card button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Mobile responsive layout */
+@media (max-width: 600px) {
+  .profile-page {
+    width: calc(100% - 24px);
+    margin: 28px auto;
+  }
+
+  .profile-heading h1 {
+    font-size: 26px;
+  }
+
+  .profile-card {
+    padding: 20px 17px;
+    border-radius: 12px;
+  }
+
+  .profile-card h2 {
+    font-size: 19px;
+  }
+
+  .profile-details > div {
+    grid-template-columns: 1fr;
+    gap: 7px;
+    padding: 14px 0;
+  }
+
+  .profile-card button {
+    width: 100%;
+  }
+}
