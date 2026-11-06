@@ -1,4 +1,4 @@
-
+const db = require("../config/db");
 const Enrollment = require("../models/enrollmentModel");
 const Course = require("../models/courseModel");
 
@@ -36,9 +36,7 @@ const parsePositiveInteger = (
   const parsed = Number(value);
 
   if (!Number.isSafeInteger(parsed) || parsed > maximum) {
-    throw new Error(
-      `${name} must be between 1 and ${maximum}`
-    );
+    throw new Error(`${name} must be between 1 and ${maximum}`);
   }
 
   return parsed;
@@ -54,6 +52,7 @@ const parseDate = (value, name) => {
   }
 
   const [year, month, day] = value.split("-").map(Number);
+
   const date = new Date(Date.UTC(year, month - 1, day));
 
   if (
@@ -73,6 +72,7 @@ const getValidatedOptions = (req) => {
     "courseId",
     "from",
     "to",
+    "status",
     "sort",
     "order",
     "page",
@@ -109,6 +109,17 @@ const getValidatedOptions = (req) => {
     throw new Error("from must not be later than to");
   }
 
+  const status = getQueryString(req, "status") ?? null;
+
+  if (
+    status !== null &&
+    !["pending", "approved", "rejected"].includes(status)
+  ) {
+    throw new Error(
+      "status must be pending, approved, or rejected"
+    );
+  }
+
   const sort = getQueryString(req, "sort") ?? "date";
   const order = getQueryString(req, "order") ?? "desc";
 
@@ -133,13 +144,24 @@ const getValidatedOptions = (req) => {
     MAX_LIMIT
   );
 
-  return { q, courseId, from, to, sort, order, page, limit };
+  return {
+    q,
+    courseId,
+    from,
+    to,
+    status,
+    sort,
+    order,
+    page,
+    limit
+  };
 };
 
-// Student: enroll in a course
+// Student: submit enrollment request.
 const enrollInCourse = async (req, res) => {
   try {
     const { courseId } = req.body;
+
     const studentId = req.user.id;
 
     if (
@@ -153,6 +175,7 @@ const enrollInCourse = async (req, res) => {
     }
 
     const validCourseId = Number(courseId);
+
     const course = await Course.getById(validCourseId);
 
     if (!course) {
@@ -167,9 +190,38 @@ const enrollInCourse = async (req, res) => {
     );
 
     if (existing) {
-      return res.status(409).json({
-        message: "You are already enrolled in this course"
-      });
+      if (
+        existing.status === "pending" ||
+        existing.status === "approved"
+      ) {
+        return res.status(409).json({
+          message:
+            existing.status === "pending"
+              ? "Your enrollment request is already pending."
+              : "You are already approved for this course."
+        });
+      }
+
+      // Rejected request: allow re-submission.
+      if (existing.status === "rejected") {
+        await db.execute(
+          `UPDATE enrollments
+           SET status = 'pending',
+               reviewed_by = NULL,
+               reviewed_at = NULL,
+               rejection_reason = NULL,
+               enrolled_at = CURRENT_TIMESTAMP
+           WHERE id = ?
+           AND status = 'rejected'`,
+          [existing.id]
+        );
+
+        return res.status(200).json({
+          message: "Enrollment request resubmitted successfully.",
+          enrollmentId: existing.id,
+          status: "pending"
+        });
+      }
     }
 
     const enrollmentId = await Enrollment.create(
@@ -178,17 +230,18 @@ const enrollInCourse = async (req, res) => {
     );
 
     return res.status(201).json({
-      message: "Course enrollment successful",
-      enrollmentId
+      message: "Enrollment request submitted successfully.",
+      enrollmentId,
+      status: "pending"
     });
   } catch (error) {
     if (error.code === "ER_DUP_ENTRY") {
       return res.status(409).json({
-        message: "You are already enrolled in this course"
+        message: "An enrollment request already exists."
       });
     }
 
-    console.error("Error enrolling in course:", error);
+    console.error("Error submitting enrollment:", error);
 
     return res.status(500).json({
       message: "Internal server error"
@@ -196,7 +249,7 @@ const enrollInCourse = async (req, res) => {
   }
 };
 
-// Student: get own enrolled courses
+// Student: view own enrollment requests.
 const getMyEnrollments = async (req, res) => {
   try {
     const enrollments = await Enrollment.getByStudent(req.user.id);
@@ -214,7 +267,7 @@ const getMyEnrollments = async (req, res) => {
   }
 };
 
-// Admin: get students enrolled in a specific course
+// Admin: get students in one course.
 const getCourseEnrollments = async (req, res) => {
   try {
     const { courseId } = req.params;
@@ -251,7 +304,7 @@ const getCourseEnrollments = async (req, res) => {
   }
 };
 
-// Admin: CR-008 server-side listing
+// Admin: CR-008 + CR-011 listing.
 const getAllEnrollments = async (req, res) => {
   let options;
 
@@ -285,7 +338,100 @@ const getAllEnrollments = async (req, res) => {
   }
 };
 
-// Admin: delete enrollment
+// Admin: approve or reject request.
+const updateEnrollmentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, reason = "" } = req.body;
+
+    if (!/^[1-9]\d*$/.test(id)) {
+      return res.status(400).json({
+        message: "Invalid enrollment ID"
+      });
+    }
+
+    if (!["approved", "rejected"].includes(status)) {
+      return res.status(400).json({
+        message: "Status must be approved or rejected"
+      });
+    }
+
+    if (typeof reason !== "string") {
+      return res.status(400).json({
+        message: "Reason must be a string"
+      });
+    }
+
+    const trimmedReason = reason.trim();
+
+    if (status === "rejected" && !trimmedReason) {
+      return res.status(400).json({
+        message: "A rejection reason is required."
+      });
+    }
+
+    if (trimmedReason.length > 500) {
+      return res.status(400).json({
+        message: "Reason must not exceed 500 characters."
+      });
+    }
+
+    await Enrollment.updateStatus(
+      Number(id),
+      status,
+      trimmedReason,
+      req.user.id
+    );
+
+    return res.status(200).json({
+      message:
+        status === "approved"
+          ? "Enrollment approved successfully."
+          : "Enrollment rejected successfully."
+    });
+  } catch (error) {
+    if (error.message === "ENROLLMENT_NOT_FOUND") {
+      return res.status(404).json({
+        message: "Enrollment not found."
+      });
+    }
+
+    if (error.message === "INVALID_STATUS_TRANSITION") {
+      return res.status(409).json({
+        message:
+          "Only pending enrollment requests can be processed."
+      });
+    }
+
+    if (error.message === "COURSE_NOT_FOUND") {
+      return res.status(404).json({
+        message: "Course not found."
+      });
+    }
+
+    if (error.message === "COURSE_FULL") {
+      return res.status(409).json({
+        message: "The course has reached its capacity."
+      });
+    }
+
+    if (
+      error.message === "DUPLICATE_APPROVED_ENROLLMENT"
+    ) {
+      return res.status(409).json({
+        message: "Student is already approved for this course."
+      });
+    }
+
+    console.error("Error updating enrollment status:", error);
+
+    return res.status(500).json({
+      message: "Internal server error"
+    });
+  }
+};
+
+// Admin: delete enrollment.
 const deleteEnrollment = async (req, res) => {
   try {
     const { id } = req.params;
@@ -321,5 +467,6 @@ module.exports = {
   getMyEnrollments,
   getCourseEnrollments,
   getAllEnrollments,
+  updateEnrollmentStatus,
   deleteEnrollment
 };

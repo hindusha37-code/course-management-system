@@ -1,5 +1,6 @@
 
 const express = require("express");
+
 const router = express.Router();
 
 const {
@@ -7,13 +8,14 @@ const {
   getMyEnrollments,
   getCourseEnrollments,
   getAllEnrollments,
+  updateEnrollmentStatus,
   deleteEnrollment
 } = require("../controllers/enrollmentController");
 
 const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 
-// Student: enroll in a course
+// Student: submit enrollment request.
 router.post(
   "/",
   authMiddleware,
@@ -21,7 +23,7 @@ router.post(
   enrollInCourse
 );
 
-// Student: view own courses
+// Student: view own enrollment requests.
 router.get(
   "/my",
   authMiddleware,
@@ -29,7 +31,7 @@ router.get(
   getMyEnrollments
 );
 
-// Admin: paginated enrollment list
+// Admin: view all enrollment requests.
 router.get(
   "/",
   authMiddleware,
@@ -37,7 +39,7 @@ router.get(
   getAllEnrollments
 );
 
-// Admin: list students in one course
+// Admin: view enrollments by course.
 router.get(
   "/course/:courseId",
   authMiddleware,
@@ -45,7 +47,15 @@ router.get(
   getCourseEnrollments
 );
 
-// Admin: delete an enrollment
+// Admin: approve or reject enrollment.
+router.patch(
+  "/:id/status",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  updateEnrollmentStatus
+);
+
+// Admin: delete enrollment.
 router.delete(
   "/:id",
   authMiddleware,

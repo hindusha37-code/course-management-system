@@ -1,8 +1,8 @@
+
 const db = require("../config/db");
 
 const Course = {
-
-  // Get all courses
+  // Get all courses.
   async getAll() {
     const [rows] = await db.execute(
       "SELECT * FROM courses"
@@ -11,8 +11,7 @@ const Course = {
     return rows;
   },
 
-
-  // Get one course
+  // Get one course.
   async getById(id) {
     const [rows] = await db.execute(
       "SELECT * FROM courses WHERE id = ?",
@@ -22,50 +21,50 @@ const Course = {
     return rows[0];
   },
 
-
-  // Create course
+  // Create course.
   async create(course) {
-
     const {
       title,
       category,
       level,
       duration,
       price,
+      capacity = 30,
       image,
-      description,
+      description
     } = course;
 
     const [result] = await db.execute(
       `INSERT INTO courses
-       (title, category, level, duration, price, image, description)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+       (title, category, level, duration, price,
+        capacity, image, description)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         title,
         category,
         level,
         duration,
         price,
+        capacity,
         image,
-        description,
+        description
       ]
     );
 
     return result.insertId;
   },
 
-
-  // Update course
+  // Update course.
   async update(id, course) {
-
     const {
       title,
       category,
       level,
       duration,
       price,
+      capacity = 30,
       image,
-      description,
+      description
     } = course;
 
     const [result] = await db.execute(
@@ -75,6 +74,7 @@ const Course = {
            level = ?,
            duration = ?,
            price = ?,
+           capacity = ?,
            image = ?,
            description = ?
        WHERE id = ?`,
@@ -84,27 +84,25 @@ const Course = {
         level,
         duration,
         price,
+        capacity,
         image,
         description,
-        id,
+        id
       ]
     );
 
     return result;
   },
 
-
-  // Delete course
+  // Delete course.
   async delete(id) {
-
     const [result] = await db.execute(
       "DELETE FROM courses WHERE id = ?",
       [id]
     );
 
     return result;
-  },
-
+  }
 };
 
 module.exports = Course;

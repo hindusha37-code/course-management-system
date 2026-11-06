@@ -1695,3 +1695,81 @@ textarea.input {
     width: 100%;
   }
 }
+
+/* CR-011: Enrollment Status Labels */
+
+.enrollment-status {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.enrollment-status.pending {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.enrollment-status.approved {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.enrollment-status.rejected {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+/* CR-011: Approval controls */
+
+.enrollment-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 180px;
+}
+
+.enrollment-actions .input {
+  width: 100%;
+}
+
+.enrollment-actions button {
+  width: 100%;
+}
+
+/* CR-011: Pending approval notification */
+
+.pending-approval-message {
+  padding: 12px;
+  margin: 12px 0;
+  border-radius: 8px;
+  background-color: #fff3cd;
+  color: #856404;
+  font-weight: 600;
+}
+
+/* CR-011: Rejection reason */
+
+.enrollment-reason {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #f8d7da;
+  color: #721c24;
+  font-size: 14px;
+}
+
+.enrollment-reason p {
+  margin-top: 5px;
+}
+
+/* CR-011: Enrollment status display */
+
+.enrollment-status-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
